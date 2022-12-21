@@ -32,6 +32,31 @@ Parameters:
     Default: 10.0.3.0/24
 
 Resources:
+  S3ReadOnlyEC2:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns: 
+        - "arn:aws:iam::aws:policy/CloudWatchFullAccess"
+        - "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "ec2.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+
+  IamRoles: 
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+      Path: "/"
+      Roles: 
+        - !Ref S3ReadOnlyEC2
+
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -192,7 +217,6 @@ Resources:
       RouteTableId: !Ref PrivateRouteTable2
       SubnetId: !Ref PrivateSubnet2
 
-  # ---------------
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -248,12 +272,15 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           sudo apt-get update -y
+          sudo apt-get install unzip awscli -y
           sudo apt-get install apache2 -y
           sudo systemctl start apache2.service
           cd /var/www/html
-          echo "Udacity Demo Web Server Up and Running!" > index.html
+          aws s3 cp s3://udagram-9999/udacity.zip .
+          unzip -o udacity.zip
       ImageId: ami-0574da719dca65348
       KeyName: private-server
+      IamInstanceProfile: !Ref IamRoles
       SecurityGroups:
         - Ref: WebServerSecurityGroup
       InstanceType: t2.micro
@@ -271,9 +298,63 @@ Resources:
       LaunchConfigurationName:
         Ref: LaunchConfiguration
       MinSize: "4"
-      MaxSize: "4"
+      MaxSize: "6"
       TargetGroupARNs:
         - Ref: TargetGroup
+
+  ScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName:
+        Ref: ASG
+      Cooldown: '60'
+      ScalingAdjustment: '1'
+
+  ScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName:
+        Ref: ASG
+      Cooldown: '60'
+      ScalingAdjustment: "-1"
+
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale-up if CPU > 90% for 10 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: '300'
+      EvaluationPeriods: '2'
+      Threshold: '90'
+      AlarmActions:
+      - Ref: ScaleUpPolicy
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value:
+          Ref: ASG
+      ComparisonOperator: GreaterThanThreshold
+
+  CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scale-down if CPU < 70% for 10 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: '300'
+      EvaluationPeriods: '2'
+      Threshold: '70'
+      AlarmActions:
+      - Ref: ScaleDownPolicy
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value:
+          Ref: ASG
+      ComparisonOperator: LessThanThreshold
 
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -372,8 +453,6 @@ Resources:
           SubnetId: !Ref PublicSubnet2
           GroupSet:
             - Ref: BastionSecurityGroup
-
-# ---------------
 
 Outputs:
   VPC:
