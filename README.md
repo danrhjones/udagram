@@ -12,4 +12,4 @@ This needs to be automated so that the infrastructure can be discarded as soon a
 
 <img src="https://github.com/danrhjones/udagram/raw/main/aws_diagram.png" width="50%">
 
-[URL for Udagram]{http://udagr-loadb-18izz1wrvn274-379416961.us-east-1.elb.amazonaws.com/}
+[URL for Udagram]{http://udagr-loadb-18izz1wrvn274-379416961.us-east-1.elb.amazonaws.com}
