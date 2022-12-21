@@ -320,7 +320,7 @@ Resources:
       Cooldown: '60'
       ScalingAdjustment: "-1"
 
-  CPUAlarmHigh:
+  CPUHighAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Scale-up if CPU > 90% for 10 minutes
@@ -338,7 +338,7 @@ Resources:
           Ref: ASG
       ComparisonOperator: GreaterThanThreshold
 
-  CPUAlarmLow:
+  CPULowAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Scale-down if CPU < 70% for 10 minutes
