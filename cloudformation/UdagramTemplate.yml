@@ -279,7 +279,6 @@ Resources:
           aws s3 cp s3://udagram-9999/udacity.zip .
           unzip -o udacity.zip
       ImageId: ami-0574da719dca65348
-      KeyName: private-server
       IamInstanceProfile: !Ref IamRoles
       SecurityGroups:
         - Ref: WebServerSecurityGroup
@@ -421,7 +420,6 @@ Resources:
   Bastion1:
     Type: AWS::EC2::Instance
     Properties:
-      KeyName: jumpbox
       ImageId: ami-08c40ec9ead489470
       InstanceType: t2.micro
       Tags:
@@ -439,9 +437,8 @@ Resources:
   Bastion2:
     Type: AWS::EC2::Instance
     Properties:
-      KeyName: jumpbox
       ImageId: ami-08c40ec9ead489470
-      InstanceType: t2.micro
+      InstanceType: t3.micro
       Tags:
         - Key: Name
           Value: "bastion 2"
