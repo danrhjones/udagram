@@ -438,7 +438,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: ami-08c40ec9ead489470
-      InstanceType: t3.micro
+      InstanceType: t3.medium
       Tags:
         - Key: Name
           Value: "bastion 2"
